@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קשרים - המשחק</title>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300;400;500;700;900&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --yellow: #f9df6d;
+    --yellow-dark: #c9a908;
+    --green: #a0c35a;
+    --green-dark: #5e8a1a;
+    --blue: #b0c4ef;
+    --blue-dark: #3a5fa0;
+    --purple: #ba81c5;
+    --purple-dark: #7a3a8a;
+    --bg: #f8f5f0;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --border: #d4cfc8;
+    --selected: #333;
+    --selected-text: #fff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+    direction: rtl;
+  }
+
+  header {
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+    margin-bottom: 8px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 2.4rem;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--text);
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  .instructions {
+    font-size: 0.9rem;
+    color: #555;
+    margin: 14px 0 6px;
+    text-align: center;
+    max-width: 600px;
+  }
+
+  .mistakes {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0 18px;
+    font-size: 0.88rem;
+    color: #555;
+  }
+
+  .mistake-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #555;
+    transition: background 0.3s, transform 0.2s;
+  }
+
+  .dot.used {
+    background: #ccc;
+    transform: scale(0.85);
+  }
+
+  /* Grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 18px;
+    direction: rtl;
+  }
+
+  .card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+    user-select: none;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.2;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card:hover {
+    border-color: #999;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .card.selected {
+    background: var(--selected);
+    color: var(--selected-text);
+    border-color: var(--selected);
+    transform: scale(1.04);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  .card.shake {
+    animation: shake 0.45s ease;
+  }
+
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-6px)}
+    40%{transform:translateX(6px)}
+    60%{transform:translateX(-4px)}
+    80%{transform:translateX(4px)}
+  }
+
+  /* Solved row */
+  .solved-row {
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+    color: #fff;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 8px;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes popIn {
+    0%{transform:scale(0.85);opacity:0}
+    100%{transform:scale(1);opacity:1}
+  }
+
+  .solved-category {
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.85;
+    margin-bottom: 4px;
+  }
+
+  .solved-words {
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: 'Frank Ruhl Libre', serif;
+  }
+
+  /* Buttons */
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  button {
+    font-family: 'Heebo', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 2px solid var(--border);
+    background: transparent;
+    color: var(--text);
+  }
+
+  button:hover { background: #eee; }
+
+  button.primary {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+  }
+
+  button.primary:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Modal */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .overlay.show { display: flex; }
+
+  .modal {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px 32px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .modal h2 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 1.8rem;
+    margin-bottom: 12px;
+  }
+
+  .modal p { color: #555; margin-bottom: 20px; font-size: 0.95rem; }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin: 16px 0 24px;
+    direction: rtl;
+  }
+
+  .result-cell {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 4px;
+  }
+
+  .result-cell.yellow { background: var(--yellow); }
+  .result-cell.green { background: var(--green); }
+  .result-cell.blue { background: var(--blue); }
+  .result-cell.purple { background: var(--purple); }
+
+  .modal button { margin-top: 8px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: #333;
+    color: #fff;
+    padding: 12px 28px;
+    border-radius: 100px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    z-index: 200;
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>קשרים</h1>
+  <div class="subtitle">מצא ארבע קבוצות של ארבע מילים קשורות</div>
+</header>
+
+<p class="instructions">בחר ארבע מילים שחולקות קשר משותף ולחץ על "בדוק"</p>
+
+<div class="mistakes">
+  <span>טעויות שנותרו:</span>
+  <div class="mistake-dots">
+    <div class="dot" id="d0"></div>
+    <div class="dot" id="d1"></div>
+    <div class="dot" id="d2"></div>
+    <div class="dot" id="d3"></div>
+  </div>
+</div>
+
+<div id="solved-container"></div>
+<div class="grid" id="grid"></div>
+
+<div class="controls">
+  <button onclick="shuffle()">ערבב</button>
+  <button onclick="clearSelection()">נקה</button>
+  <button class="primary" id="submitBtn" onclick="submit()" disabled>בדוק</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <h2 id="modal-title"></h2>
+    <p id="modal-msg"></p>
+    <div class="result-grid" id="result-grid"></div>
+    <button class="primary" onclick="closeModal()">שחק שוב</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// GAME DATA  — 4 categories, 4 words each
+// ═══════════════════════════════════════════════════════════
+const CATEGORIES = [
+  {
+    label: "ירקות עלים",
+    color: "yellow",
+    bg: "#f9df6d",
+    words: ["תרד", "חסה", "עולש", "רוקט"]
+  },
+  {
+    label: "כלי נגינה ממיתרים",
+    color: "green",
+    bg: "#a0c35a",
+    words: ["כינור", "גיטרה", "עוד", "צ'לו"]
+  },
+  {
+    label: "___ שמש",
+    color: "blue",
+    bg: "#b0c4ef",
+    words: ["בת", "פניית", "משקפי", "קרם"]
+  },
+  {
+    label: "מקצועות רפואיים",
+    color: "purple",
+    bg: "#ba81c5",
+    words: ["רופא", "אחות", "פיזיותרפיסט", "פרמדיק"]
+  }
+];
+
+// ═══════════════════════════════════════════════════════════
+let remaining = CATEGORIES.flatMap((c, ci) => c.words.map(w => ({ word: w, cat: ci })));
+let selected = [];
+let mistakes = 4;
+let solved = [];
+let guessHistory = [];
+let gameOver = false;
+
+function shuffleArr(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function shuffle() {
+  remaining = shuffleArr([...remaining]);
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  remaining.forEach(({ word }) => {
+    const card = document.createElement('div');
+    card.className = 'card' + (selected.includes(word) ? ' selected' : '');
+    card.textContent = word;
+    card.onclick = () => toggle(word, card);
+    grid.appendChild(card);
+  });
+  document.getElementById('submitBtn').disabled = selected.length !== 4;
+}
+
+function toggle(word, card) {
+  if (gameOver) return;
+  if (selected.includes(word)) {
+    selected = selected.filter(w => w !== word);
+    card.classList.remove('selected');
+  } else {
+    if (selected.length >= 4) return;
+    selected.push(word);
+    card.classList.add('selected');
+  }
+  document.getElementById('submitBtn').disabled = selected.length !== 4;
+}
+
+function clearSelection() {
+  selected = [];
+  renderGrid();
+}
+
+function submit() {
+  if (selected.length !== 4 || gameOver) return;
+
+  // check which category
+  const cats = selected.map(w => remaining.find(r => r.word === w).cat);
+  const allSame = cats.every(c => c === cats[0]);
+
+  // record guess
+  guessHistory.push([...cats]);
+
+  if (allSame) {
+    const ci = cats[0];
+    solved.push(ci);
+    remaining = remaining.filter(r => !selected.includes(r.word));
+    selected = [];
+    renderSolved(ci);
+    renderGrid();
+
+    if (solved.length === 4) {
+      setTimeout(() => endGame(true), 600);
+    }
+  } else {
+    // check if one away
+    const freq = {};
+    cats.forEach(c => freq[c] = (freq[c] || 0) + 1);
+    const maxFreq = Math.max(...Object.values(freq));
+
+    mistakes--;
+    document.getElementById(`d${mistakes}`).classList.add('used');
+
+    if (maxFreq === 3) {
+      showToast("כמעט! אחת לא מתאימה");
+    } else {
+      showToast("לא נכון, נסה שוב");
+    }
+
+    // shake selected cards
+    document.querySelectorAll('.card.selected').forEach(c => {
+      c.classList.add('shake');
+      setTimeout(() => c.classList.remove('shake'), 500);
+    });
+
+    selected = [];
+    setTimeout(() => {
+      renderGrid();
+      if (mistakes === 0) {
+        setTimeout(() => endGame(false), 400);
+      }
+    }, 500);
+  }
+}
+
+function renderSolved(ci) {
+  const cat = CATEGORIES[ci];
+  const container = document.getElementById('solved-container');
+  const row = document.createElement('div');
+  row.className = 'solved-row';
+  row.style.background = cat.bg;
+  row.style.color = cat.color === 'yellow' || cat.color === 'green' ? '#333' : '#fff';
+  row.innerHTML = `
+    <div class="solved-category">${cat.label}</div>
+    <div class="solved-words">${cat.words.join(' • ')}</div>
+  `;
+  container.appendChild(row);
+}
+
+function endGame(won) {
+  gameOver = true;
+
+  // reveal remaining if lost
+  if (!won) {
+    const remaining2 = [0,1,2,3].filter(i => !solved.includes(i));
+    remaining2.forEach(ci => renderSolved(ci));
+    document.getElementById('grid').innerHTML = '';
+  }
+
+  // build result grid from guessHistory
+  const resultGrid = document.getElementById('result-grid');
+  guessHistory.forEach(guess => {
+    guess.forEach(catIdx => {
+      const cell = document.createElement('div');
+      cell.className = `result-cell ${CATEGORIES[catIdx].color}`;
+      resultGrid.appendChild(cell);
+    });
+  });
+
+  document.getElementById('modal-title').textContent = won ? '🎉 כל הכבוד!' : '😔 בפעם הבאה';
+  document.getElementById('modal-msg').textContent = won
+    ? `פתרת את הפאזל עם ${4 - mistakes} טעויות בלבד!`
+    : 'לא הצלחת הפעם — הקשרים גלויים למעלה!';
+
+  setTimeout(() => document.getElementById('overlay').classList.add('show'), 800);
+}
+
+function closeModal() {
+  location.reload();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// init
+shuffleArr(remaining);
+renderGrid();
+</script>
+</body>
+</html>
