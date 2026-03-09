@@ -328,42 +328,62 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// GAME DATA  — 4 categories, 4 words each
+// GAME STATE
 // ═══════════════════════════════════════════════════════════
-const CATEGORIES = [
-  {
-    label: "ירקות עלים",
-    color: "yellow",
-    bg: "#f9df6d",
-    words: ["תרד", "חסה", "עולש", "רוקט"]
-  },
-  {
-    label: "כלי נגינה ממיתרים",
-    color: "green",
-    bg: "#a0c35a",
-    words: ["כינור", "גיטרה", "עוד", "צ'לו"]
-  },
-  {
-    label: "___ שמש",
-    color: "blue",
-    bg: "#b0c4ef",
-    words: ["בת", "פניית", "משקפי", "קרם"]
-  },
-  {
-    label: "מקצועות רפואיים",
-    color: "purple",
-    bg: "#ba81c5",
-    words: ["רופא", "אחות", "פיזיותרפיסט", "פרמדיק"]
-  }
-];
-
-// ═══════════════════════════════════════════════════════════
-let remaining = CATEGORIES.flatMap((c, ci) => c.words.map(w => ({ word: w, cat: ci })));
+let CATEGORIES = [];
+let remaining = [];
 let selected = [];
 let mistakes = 4;
 let solved = [];
 let guessHistory = [];
 let gameOver = false;
+
+async function initGame() {
+  try {
+    const response = await fetch('word.json');
+    if (!response.ok) throw new Error('Failed to load words');
+    const data = await response.json();
+    
+    // Group categories by difficulty
+    const groups = {};
+    data.forEach(item => {
+      if (!groups[item.difficulty]) groups[item.difficulty] = [];
+      groups[item.difficulty].push(item);
+    });
+    
+    // Select 4 random categories, one from each difficulty level (1 to 4)
+    const selectedCats = [];
+    const difficultyConfig = {
+      1: { color: "yellow", bg: "#f9df6d" },
+      2: { color: "green", bg: "#a0c35a" },
+      3: { color: "blue", bg: "#b0c4ef" },
+      4: { color: "purple", bg: "#ba81c5" }
+    };
+    
+    for (let d = 1; d <= 4; d++) {
+      const group = groups[d];
+      if (group && group.length > 0) {
+        const randomItem = group[Math.floor(Math.random() * group.length)];
+        selectedCats.push({
+          label: randomItem.category,
+          words: [...randomItem.words],
+          ...difficultyConfig[d]
+        });
+      }
+    }
+
+    if (selectedCats.length < 4) throw new Error('Not enough categories found');
+    
+    CATEGORIES = selectedCats;
+    remaining = CATEGORIES.flatMap((c, ci) => c.words.map(w => ({ word: w, cat: ci })));
+    
+    shuffleArr(remaining);
+    renderGrid();
+  } catch (err) {
+    console.error("Error initializing game:", err);
+    showToast("שגיאה בטעינת המשחק. וודא שקובץ word.json תקין.");
+  }
+}
 
 function shuffleArr(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -515,8 +535,7 @@ function showToast(msg) {
 }
 
 // init
-shuffleArr(remaining);
-renderGrid();
+initGame();
 </script>
 </body>
 </html>
